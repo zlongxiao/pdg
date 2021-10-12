@@ -1,0 +1,237 @@
+CREATE DATABASE IF NOT EXISTS PDG DEFAULT CHARACTER SET utf8;
+SET NAMES 'utf8';
+USE PDG;
+
+CREATE TABLE USER (
+    username VARCHAR(128) NOT NULL COMMENT '用户名',
+    epassword VARCHAR(256) NOT NULL COMMENT '加密后的密码',
+    PRIMARY KEY (username)
+) ENGINE = INNODB;
+
+ALTER TABLE USER ADD COLUMN role VARCHAR(256) DEFAULT '管理员' NOT NULL COMMENT '角色';
+
+INSERT INTO USER(username, epassword, role) values('ADMIN', '21232f297a57a5a743894a0e4a801fc3', '管理员');
+
+CREATE TABLE TOKEN (
+    token VARCHAR(128) NOT NULL COMMENT 'token',
+    username VARCHAR(128) NOT NULL COMMENT '用户名',
+    expireTime DATETIME NOT NULL COMMENT '过期时间',
+    PRIMARY KEY (token)
+) ENGINE = INNODB;
+
+CREATE TABLE DATACENTER (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    name VARCHAR(256) NOT NULL COMMENT '机房名称',
+    isDeleted INT NOT NULL DEFAULT 0 COMMENT '是否被删除',
+    PRIMARY KEY (uuid)
+) ENGINE = INNODB;
+
+CREATE TABLE RACK (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    name VARCHAR(256) NOT NULL COMMENT '机柜名称',
+    size INT NOT NULL COMMENT '机柜U数',
+    isDeleted INT NOT NULL DEFAULT 0 COMMENT '是否被删除',
+    PRIMARY KEY (uuid)
+) ENGINE = INNODB;
+
+CREATE TABLE MAPPING_DATACENTER_RACK (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    datacenterId VARCHAR(128) NOT NULL COMMENT '机房ID',
+    rackId VARCHAR(128) NOT NULL COMMENT '机柜ID',
+    positionX INT NOT NULL COMMENT '机柜位置X坐标',
+    positionZ INT NOT NULL COMMENT '机柜位置Z坐标',
+    PRIMARY KEY (uuid),
+    KEY (datacenterId),
+    KEY (rackId)
+) ENGINE = INNODB;
+
+CREATE TABLE SERVER_DEVICE (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    brand VARCHAR(128) NOT NULL COMMENT '品牌',
+    model VARCHAR(256) NOT NULL COMMENT '型号',
+    diskCapacity INT NOT NULL COMMENT '磁盘容量(TB)',
+    memoryCapacity INT NOT NULL COMMENT '内存容量(GB)',
+    hostname VARCHAR(128) NOT NULL COMMENT '主机名',
+    createTime DATETIME NOT NULL COMMENT '记录创建时间',
+    enableTime DATETIME NOT NULL COMMENT '服务器上架使用时间',
+    expireTime DATETIME NOT NULL COMMENT '服务器过保时间',
+    os VARCHAR(128) NOT NULL COMMENT '操作系统信息',
+    comment VARCHAR(1024) NOT NULL COMMENT '服务器说明信息',
+    isDeleted INT NOT NULL DEFAULT 0 COMMENT '是否被删除',
+    PRIMARY KEY (uuid),
+    UNIQUE KEY (hostname)
+) ENGINE = INNODB;
+
+CREATE TABLE NETWORK_DEVICE (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    brand VARCHAR(128) NOT NULL COMMENT '品牌',
+    model VARCHAR(256) NOT NULL COMMENT '型号',
+    name VARCHAR(128) NOT NULL COMMENT '设备名',
+    createTime DATETIME NOT NULL COMMENT '记录创建时间',
+    enableTime DATETIME NOT NULL COMMENT '服务器上架使用时间',
+    expireTime DATETIME NOT NULL COMMENT '服务器过保时间',
+    comment VARCHAR(1024) NOT NULL COMMENT '说明信息',
+    isDeleted INT NOT NULL DEFAULT 0 COMMENT '是否被删除',
+    PRIMARY KEY (uuid),
+    UNIQUE KEY (name)
+) ENGINE = INNODB;
+
+CREATE TABLE STORAGE_DEVICE (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    brand VARCHAR(128) NOT NULL COMMENT '品牌',
+    model VARCHAR(256) NOT NULL COMMENT '型号',
+    name VARCHAR(128) NOT NULL COMMENT '设备名',
+    createTime DATETIME NOT NULL COMMENT '记录创建时间',
+    enableTime DATETIME NOT NULL COMMENT '服务器上架使用时间',
+    expireTime DATETIME NOT NULL COMMENT '服务器过保时间',
+    comment VARCHAR(1024) NOT NULL COMMENT '说明信息',
+    isDeleted INT NOT NULL DEFAULT 0 COMMENT '是否被删除',
+    PRIMARY KEY (uuid),
+    UNIQUE KEY (name)
+) ENGINE = INNODB;
+
+CREATE TABLE COMMON_DEVICE (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    brand VARCHAR(128) NOT NULL COMMENT '品牌',
+    model VARCHAR(256) NOT NULL COMMENT '型号',
+    name VARCHAR(128) NOT NULL COMMENT '设备名',
+    createTime DATETIME NOT NULL COMMENT '记录创建时间',
+    enableTime DATETIME NOT NULL COMMENT '服务器上架使用时间',
+    expireTime DATETIME NOT NULL COMMENT '服务器过保时间',
+    comment VARCHAR(1024) NOT NULL COMMENT '说明信息',
+    isDeleted INT NOT NULL DEFAULT 0 COMMENT '是否被删除',
+    PRIMARY KEY (uuid),
+    UNIQUE KEY (name)
+) ENGINE = INNODB;
+
+CREATE TABLE MAPPING_RACK_DEVICE (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    rackId VARCHAR(128) NOT NULL COMMENT '机柜ID',
+    deviceId VARCHAR(128) NOT NULL COMMENT '设备ID',
+    deviceType VARCHAR(256) NOT NULL COMMENT '设备类型: [SERVER_DEVICE/STORAGE_DEVICE/NETWORK_DEVICE/COMMON_DEVICE]',
+    begPos INT NOT NULL COMMENT '起始U位置(含)',
+    endPos INT NOT NULL COMMENT '结束U位置(不含)',
+    PRIMARY KEY (uuid),
+    KEY (deviceId),
+    KEY (rackId)
+) ENGINE = INNODB;
+
+CREATE TABLE CONNECTION (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    sourceId VARCHAR(128) NOT NULL COMMENT '线缆源头设备ID',
+    sourcePort VARCHAR(128) NOT NULL COMMENT '线缆源头设备端口信息',
+    sourceDeviceType VARCHAR(128) NOT NULL COMMENT '源头设备类型',
+    sourceDeviceName VARCHAR(128) NOT NULL COMMENT '源头设备名称',
+    destinationId VARCHAR(128) NOT NULL COMMENT '线缆目的设备ID',
+    destinationPort VARCHAR(128) NOT NULL COMMENT '线缆目的设备端口信息',
+    destinationDeviceType VARCHAR(128) NOT NULL COMMENT '目的设备类型',
+    destinationDeviceName VARCHAR(128) NOT NULL COMMENT '目的设备名称',
+    PRIMARY KEY (uuid),
+    KEY (sourceId),
+    KEY (destinationId)
+) ENGINE = INNODB;
+
+CREATE TABLE IP (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    ipAddress VARCHAR(128) NOT NULL COMMENT 'IP地址',
+    type VARCHAR(256) NOT NULL COMMENT '使用类型: [SERVER_DEVICE/STORAGE_DEVICE/NETWORK_DEVICE/COMMON_DEVICE/OTHER]',
+    role VARCHAR(256) NOT NULL COMMENT '业务类型: [业务/带外]',
+    targetId VARCHAR(128) NOT NULL COMMENT '使用方ID',
+    ipSetId VARCHAR(128) NOT NULL COMMENT 'IP池ID',
+    PRIMARY KEY (uuid),
+    UNIQUE KEY (ipAddress)
+) ENGINE = INNODB;
+
+CREATE TABLE IPSET (
+    uuid VARCHAR(128) NOT NULL COMMENT '唯一ID',
+    cidr VARCHAR(128) NOT NULL COMMENT 'CIDR',
+    comment VARCHAR(1024) NOT NULL COMMENT '说明信息',
+    isDeleted INT NOT NULL DEFAULT 0 COMMENT '是否被删除',
+    PRIMARY KEY (uuid)
+) ENGINE = INNODB;
+
+CREATE TABLE AUDIT (
+    id INT NOT NULL AUTO_INCREMENT COMMENT '唯一ID',
+    username VARCHAR(128) NOT NULL COMMENT '用户名',
+    action VARCHAR(256) NOT NULL COMMENT '动作',
+    url VARCHAR(1024) NOT NULL COMMENT '请求地址',
+    args TEXT NOT NULL COMMENT '请求参数',
+    actionTime DATETIME NOT NULL COMMENT '动作时间',
+    PRIMARY KEY (id),
+    KEY (username),
+    KEY (actionTime)
+) ENGINE = INNODB;
+
+CREATE TABLE MONITOR_ITEM (
+    id INT NOT NULL AUTO_INCREMENT COMMENT '唯一ID',
+    name VARCHAR(128) NOT NULL COMMENT '监控项名称',
+    isInternal INT NOT NULL COMMENT '是否为系统自带监控项',
+    dcType VARCHAR(128) NOT NULL COMMENT '数据采集模块类型',
+    PRIMARY KEY (id)
+) ENGINE = INNODB;
+
+INSERT INTO MONITOR_ITEM(name, isInternal, dcType, alertType) VALUES("设备可达情况", 1, "", "");
+INSERT INTO MONITOR_ITEM(name, isInternal, dcType, alertType) VALUES("CPU使用率", 1, "", "");
+INSERT INTO MONITOR_ITEM(name, isInternal, dcType, alertType) VALUES("内存使用率", 1, "", "");
+
+
+CREATE TABLE MONITOR_ITEM_DC_FAKE_CFG (
+    id INT NOT NULL AUTO_INCREMENT COMMENT '唯一ID',
+    itemId INT NOT NULL COMMENT '映射的监控项ID',
+    fakeItemName VARCHAR(128) NOT NULL COMMENT 'Fake监控中对应的监控项名称',
+    hostip VARCHAR(128) NOT NULL COMMENT 'Fake监控中对应的主机IP',
+    PRIMARY KEY (id),
+    KEY (itemId)
+) ENGINE = INNODB;
+
+CREATE TABLE MONITOR_ITEM_DEVICE_MAPPING (
+    id INT NOT NULL AUTO_INCREMENT COMMENT '唯一ID',
+    itemId INT NOT NULL COMMENT '映射的监控项ID',
+    itemName VARCHAR(128) NOT NULL COMMENT '监控项名称',
+    deviceUUID VARCHAR(128) NOT NULL COMMENT '设备ID',
+    deviceType VARCHAR(128) NOT NULL COMMENT '设备类型',
+    deviceName VARCHAR(128) NOT NULL COMMENT '设备名',
+    PRIMARY KEY (id),
+    KEY (itemId),
+    KEY (deviceUUID)
+) ENGINE = INNODB;
+
+CREATE TABLE MONITOR_BACKEND_CFG (
+    id INT NOT NULL AUTO_INCREMENT COMMENT '唯一ID',
+    backendName VARCHAR(128) NOT NULL COMMENT '监控服务类型',
+    cfgStr TEXT NOT NULL COMMENT '配置',
+    PRIMARY KEY (id),
+    UNIQUE KEY (backendName)
+) ENGINE = INNODB;
+
+INSERT INTO MONITOR_BACKEND_CFG(backendName, cfgStr) VALUES("FAKE", "{}");
+INSERT INTO MONITOR_BACKEND_CFG(backendName, cfgStr) VALUES("ZABBIX", "{}");
+
+ALTER TABLE USER ADD COLUMN mobile VARCHAR(128) DEFAULT '' NOT NULL COMMENT '手机号';
+ALTER TABLE USER ADD COLUMN mail VARCHAR(256) DEFAULT '' NOT NULL COMMENT '邮箱';
+ALTER TABLE USER ADD COLUMN wx VARCHAR(256) DEFAULT '' NOT NULL COMMENT '微信';
+
+CREATE TABLE ALERT_ITEM (
+    id INT NOT NULL AUTO_INCREMENT COMMENT '唯一ID',
+    itemName VARCHAR(256) NOT NULL COMMENT '事件名',
+    alertType VARCHAR(128) NOT NULL COMMENT '事件来源类型',
+    eventId VARCHAR(128) NOT NULL COMMENT '事件ID，此ID为一类事件的标示，如果此类事件有多个主机告警则主机信息由其余信息标示',
+    PRIMARY KEY (id),
+    KEY (eventId)
+) ENGINE = INNODB;
+
+
+CREATE TABLE ALERT_EVENT (
+    id INT NOT NULL AUTO_INCREMENT COMMENT '唯一ID',
+    alertType VARCHAR(128) NOT NULL COMMENT '事件来源类型',
+    eventId VARCHAR(128) NOT NULL COMMENT '事件ID，对应ALERT_ITEM',
+    alertId VARCHAR(128) NOT NULL COMMENT '告警事件ID，每个告警事件在相关监控类型下唯一',
+    alertMsg VARCHAR(2048) NOT NULL COMMENT '告警事件内容',
+    alertHost VARCHAR(128) NOT NULL COMMENT '告警主机',
+    createTime DATETIME NOT NULL COMMENT '事件第一次发生时间',
+    endTime DATETIME NOT NULL COMMENT '事件结束时间',
+    status VARCHAR(128) NOT NULL COMMENT '状态: 告警中、已恢复、ACK',
+    PRIMARY KEY (id),
+    KEY (eventId),
+    KEY (alertId)
+) ENGINE = INNODB;
