@@ -1,3 +1,4 @@
+#https://github.com/QthCN/PDG.git
 # 可视化机房资源管理平台
 
 ![图片](./doc/机房3D视图.png)
